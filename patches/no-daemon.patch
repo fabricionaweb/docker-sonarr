@@ -1,0 +1,13 @@
+shutdown instead of restart, daemon takes care of lifecycle
+
+--- a/src/NzbDrone.Core/Lifecycle/LifecycleService.cs
++++ b/src/NzbDrone.Core/Lifecycle/LifecycleService.cs
+@@ -46,7 +46,6 @@
+         public void Restart()
+         {
+             _logger.Info("Restart requested.");
+-
+-            _eventAggregator.PublishEvent(new ApplicationShutdownRequested(true));
++            _eventAggregator.PublishEvent(new ApplicationShutdownRequested());
+
+             if (_runtimeInfo.IsWindowsService)
