@@ -1,15 +1,22 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1-labs
 FROM alpine:3.18 AS base
 
 # source stage
 FROM base AS source
 
+WORKDIR /src
+ARG BRANCH
+ARG VERSION
+ARG COMMIT=$VERSION
+
+# mandatory build-arg
+RUN test -n "$BRANCH" && test -n "$VERSION"
+
 # dependencies
 RUN apk add --no-cache patch
 
-# get and extract
-WORKDIR /src
-RUN wget -qO- https://github.com/Sonarr/Sonarr/archive/develop.tar.gz | tar xz --strip-components 1
+# get and extract source from git
+ADD https://github.com/Sonarr/Sonarr.git#$BRANCH ./
 
 # apply available patches
 COPY patches ./
@@ -41,11 +48,6 @@ ENV RUNTIME=linux-musl-x64
 # backend stage
 FROM build-$TARGETARCH AS build-backend
 
-# variables
-ARG BRANCH
-ARG VERSION
-ARG COMMIT
-
 # dependencies
 RUN apk add --no-cache dotnet6-sdk
 
@@ -58,7 +60,7 @@ RUN echo "----------------------------" && \
     echo "----------------------------"
 
 # patch VERSION
-RUN buildprops=src/Directory.Build.props && \
+RUN buildprops=./src/Directory.Build.props && \
     sed -i -e "s/<AssemblyConfiguration>[\$()A-Za-z-]\+<\/AssemblyConfiguration>/<AssemblyConfiguration>$BRANCH<\/AssemblyConfiguration>/g" $buildprops && \
     sed -i -e "s/<AssemblyVersion>[0-9.*]\+<\/AssemblyVersion>/<AssemblyVersion>$VERSION<\/AssemblyVersion>/g" $buildprops
 COPY <<EOF /build/package_info
@@ -70,7 +72,7 @@ EOF
 
 # build
 ENV artifacts="/src/_output/net6.0/$RUNTIME/publish"
-RUN dotnet build src \
+RUN dotnet build ./src \
         -p:RuntimeIdentifiers=$RUNTIME \
         -p:Configuration=Release \
         -p:SelfContained=false \
@@ -81,7 +83,7 @@ RUN dotnet build src \
 COPY --from=build-frontend /src/_output/UI $artifacts/UI
 
 # cleanup
-RUN find . \( \
+RUN find ./ \( \
         -name "ServiceUninstall.*" -o \
         -name "ServiceInstall.*" -o \
         -name "Sonarr.Windows.*" -o \
@@ -89,7 +91,7 @@ RUN find . \( \
     \) -delete && \
     mv $artifacts /build/bin
 
-# RUNTIME stage
+# runtime stage
 FROM base
 
 ENV S6_VERBOSITY=0 PUID=65534 PGID=65534
@@ -102,7 +104,7 @@ RUN apk add --no-cache tzdata s6-overlay aspnetcore6-runtime sqlite-libs curl
 
 # copy files
 COPY --from=build-backend /build /app
-COPY rootfs/ /
+COPY ./rootfs /
 
 # run using s6-overlay
 ENTRYPOINT ["/init"]
