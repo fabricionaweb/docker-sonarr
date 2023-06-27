@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1-labs
-FROM alpine:3.18 AS base
+FROM public.ecr.aws/docker/library/alpine:3.18 AS base
 
 # source stage
 FROM base AS source
