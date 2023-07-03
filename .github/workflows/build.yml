@@ -2,7 +2,7 @@ name: Build-Publish
 
 on:
   push:
-    paths: ['.env', 'Dockerfile', 'rootfs/**']
+    paths: ['.env', 'Dockerfile', 'rootfs/**', 'patches/**']
   workflow_dispatch:
 
 env:

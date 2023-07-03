@@ -20,7 +20,7 @@ ADD https://github.com/Sonarr/Sonarr.git#$BRANCH ./
 
 # apply available patches
 COPY patches ./
-RUN patch -p1 -i *.patch
+RUN find . -name "*.patch" -print0 | sort -z | xargs -t -0 -n1 patch -p1 -i
 
 # frontend stage
 FROM source AS build-frontend
