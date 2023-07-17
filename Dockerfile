@@ -12,11 +12,11 @@ ARG COMMIT=$VERSION
 # mandatory build-arg
 RUN test -n "$BRANCH" && test -n "$VERSION"
 
-# dependencies
-RUN apk add --no-cache patch
-
 # get and extract source from git
 ADD https://github.com/Sonarr/Sonarr.git#$BRANCH ./
+
+# dependencies
+RUN apk add --no-cache patch
 
 # apply available patches
 COPY patches ./
@@ -99,12 +99,12 @@ WORKDIR /config
 VOLUME /config
 EXPOSE 8989
 
-# runtime dependencies
-RUN apk add --no-cache tzdata s6-overlay aspnetcore6-runtime sqlite-libs curl
-
 # copy files
 COPY --from=build-backend /build /app
 COPY ./rootfs /
+
+# runtime dependencies
+RUN apk add --no-cache tzdata s6-overlay aspnetcore6-runtime sqlite-libs curl
 
 # run using s6-overlay
 ENTRYPOINT ["/init"]
