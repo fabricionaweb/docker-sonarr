@@ -9,5 +9,6 @@
   "files.trimTrailingWhitespace": true,
   "yaml.schemas": {
     "https://json.schemastore.org/github-workflow.json": ".github/workflows/"
-  }
+  },
+  "editor.rulers": [80]
 }

@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1-labs
 FROM public.ecr.aws/docker/library/alpine:3.18 AS base
 
-# source stage
+# source stage =================================================================
 FROM base AS source
 
 WORKDIR /src
@@ -22,42 +22,28 @@ RUN apk add --no-cache patch
 COPY patches ./
 RUN find . -name "*.patch" -print0 | sort -z | xargs -t -0 -n1 patch -p1 -i
 
-# frontend stage
+# frontend stage ===============================================================
 FROM source AS build-frontend
 
 # dependencies
 RUN apk add --no-cache nodejs-current && \
     corepack enable
 
-# print versions
-RUN echo "----------------" && \
-    echo "node: $(node -v)" && \
-    echo "yarn: $(yarn -v)" && \
-    echo "----------------"
-
 # build
 RUN yarn install --frozen-lockfile --network-timeout 120000 && \
     yarn build --env production --no-stats
 
-# normalize arch
+# normalize arch ===============================================================
 FROM source AS build-arm64
 ENV RUNTIME=linux-musl-arm64
 FROM source AS build-amd64
 ENV RUNTIME=linux-musl-x64
 
-# backend stage
+# backend stage ================================================================
 FROM build-$TARGETARCH AS build-backend
 
 # dependencies
 RUN apk add --no-cache dotnet6-sdk
-
-# print versions
-RUN echo "----------------------------" && \
-    echo "dotnet:  $(dotnet --version)" && \
-    echo "sonarr:  $VERSION @ $BRANCH" && \
-    echo "runtime: $RUNTIME" && \
-    echo "commit:  $COMMIT" && \
-    echo "----------------------------"
 
 # patch VERSION
 RUN buildprops=./src/Directory.Build.props && \
@@ -91,7 +77,7 @@ RUN find ./ \( \
     \) -delete && \
     mv $artifacts /build/bin
 
-# runtime stage
+# runtime stage ================================================================
 FROM base
 
 ENV S6_VERBOSITY=0 S6_BEHAVIOUR_IF_STAGE2_FAILS=2 PUID=65534 PGID=65534
