@@ -1,5 +1,23 @@
 #!/usr/bin/with-contenv sh
 
+CONFIG_FILE=/config/config.xml
+
+# create initial config file
+if [[ ! -f "$CONFIG_FILE" ]]; then
+  cat <<EOF >"$CONFIG_FILE"
+<Config>
+  <AnalyticsEnabled>False</AnalyticsEnabled>
+</Config>
+EOF
+  chown $PUID:$PGID "$CONFIG_FILE"
+elif [[ $(grep -c "<AnalyticsEnabled>" "$CONFIG_FILE") == 0 ]]; then
+  # if analytics doenst exist in config, insert one
+  sed -i "/<Config>/a\ \ <AnalyticsEnabled>False<\/AnalyticsEnabled>" "$CONFIG_FILE"
+else
+  # disable analytics
+  sed -i "/<AnalyticsEnabled>/s/>.*<\//>False<\//" "$CONFIG_FILE"
+fi
+
 # change chdir
 cd /config
 
