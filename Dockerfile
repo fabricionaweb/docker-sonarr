@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1-labs
 FROM public.ecr.aws/docker/library/alpine:3.18 AS base
+ENV TZ=UTC
 
 # source stage =================================================================
 FROM base AS source
