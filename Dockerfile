@@ -1,14 +1,13 @@
 # syntax=docker/dockerfile:1-labs
 FROM public.ecr.aws/docker/library/alpine:3.18 AS base
+ARG BRANCH
+ARG VERSION
+ARG COMMIT=$VERSION
 ENV TZ=UTC
 
 # source stage =================================================================
 FROM base AS source
-
 WORKDIR /src
-ARG BRANCH
-ARG VERSION
-ARG COMMIT=$VERSION
 
 # mandatory build-arg
 RUN test -n "$BRANCH" && test -n "$VERSION"
