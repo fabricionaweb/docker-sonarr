@@ -2,7 +2,9 @@
 
 # change chdir
 cd /config
+
 # delete pid before start
 rm -f sonarr.pid
+
 # run with limited permissions
 exec s6-setuidgid $PUID:$PGID /app/bin/Sonarr -nobrowser -data=/config
