@@ -16,40 +16,52 @@ RUN test -n "$BRANCH" && test -n "$VERSION"
 # get and extract source from git
 ADD https://github.com/Sonarr/Sonarr.git#$BRANCH ./
 
-# dependencies
-RUN apk add --no-cache patch
-
 # apply available patches
+RUN apk add --no-cache patch
 COPY patches ./
-RUN find . -name "*.patch" -print0 | sort -z | xargs -t -0 -n1 patch -p1 -i
+RUN find ./ -name "*.patch" -print0 | sort -z | xargs -t -0 -n1 patch -p1 -i
 
 # frontend stage ===============================================================
-FROM source AS build-frontend
+FROM base AS build-frontend
+WORKDIR /src
 
 # dependencies
-RUN apk add --no-cache nodejs-current && \
-    corepack enable
+RUN apk add --no-cache nodejs-current && corepack enable
 
-# build
-RUN yarn install --frozen-lockfile --network-timeout 120000 && \
-    yarn build --env production --no-stats
+# node_modules
+COPY --from=source /src/package.json /src/yarn.lock /src/tsconfig.json ./
+RUN yarn install --frozen-lockfile --network-timeout 120000
+
+# frontend source and build
+COPY --from=source /src/frontend ./frontend
+RUN yarn build --env production --no-stats
+
+# cleanup
+RUN find ./ -name "*.map" -type f -delete && \
+    mv ./_output/UI /build
 
 # normalize arch ===============================================================
-FROM source AS build-arm64
+FROM base AS base-arm64
 ENV RUNTIME=linux-musl-arm64
-FROM source AS build-amd64
+FROM base AS base-amd64
 ENV RUNTIME=linux-musl-x64
 
 # backend stage ================================================================
-FROM build-$TARGETARCH AS build-backend
+FROM base-$TARGETARCH AS build-backend
+WORKDIR /src
 
 # dependencies
 RUN apk add --no-cache dotnet6-sdk
 
-# patch VERSION
+# dotnet source
+COPY --from=source /src/.editorconfig ./
+COPY --from=source /src/Logo ./Logo
+COPY --from=source /src/src ./src
+
+# sonarr versioning
 RUN buildprops=./src/Directory.Build.props && \
-    sed -i -e "s/<AssemblyConfiguration>[\$()A-Za-z-]\+<\/AssemblyConfiguration>/<AssemblyConfiguration>$BRANCH<\/AssemblyConfiguration>/g" $buildprops && \
-    sed -i -e "s/<AssemblyVersion>[0-9.*]\+<\/AssemblyVersion>/<AssemblyVersion>$VERSION<\/AssemblyVersion>/g" $buildprops
+    sed -i "/<AssemblyConfiguration>/s/>.*<\//>$BRANCH<\//" "$buildprops" && \
+    sed -i "/<AssemblyVersion>/s/>.*<\//>$VERSION<\//" "$buildprops"
 COPY <<EOF /build/package_info
 PackageAuthor=[fabricionaweb](https://github.com/fabricionaweb/docker-sonarr)
 UpdateMethod=Docker
@@ -57,26 +69,21 @@ Branch=$BRANCH
 PackageVersion=$COMMIT
 EOF
 
-# build
-ENV artifacts="/src/_output/net6.0/$RUNTIME/publish"
-RUN dotnet build ./src \
+# build backend
+RUN dotnet build ./src/Sonarr.sln \
         -p:RuntimeIdentifiers=$RUNTIME \
         -p:Configuration=Release \
         -p:SelfContained=false \
-        -t:PublishAllRids && \
-    chmod +x $artifacts/ffprobe
-
-# merge frontend
-COPY --from=build-frontend /src/_output/UI $artifacts/UI
+        -t:PublishAllRids
 
 # cleanup
 RUN find ./ \( \
         -name "ServiceUninstall.*" -o \
         -name "ServiceInstall.*" -o \
-        -name "Sonarr.Windows.*" -o \
-        -name "*.map" \
-    \) -delete && \
-    mv $artifacts /build/bin
+        -name "Sonarr.Windows.*" \
+    \) | xargs rm -rf && \
+    mv ./_output/net6.0/$RUNTIME/publish /build/bin && \
+    chmod +x /build/bin/ffprobe
 
 # runtime stage ================================================================
 FROM base
@@ -88,6 +95,7 @@ EXPOSE 8989
 
 # copy files
 COPY --from=build-backend /build /app
+COPY --from=build-frontend /build /app/bin/UI
 COPY ./rootfs /
 
 # runtime dependencies
