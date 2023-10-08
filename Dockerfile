@@ -1,18 +1,13 @@
 # syntax=docker/dockerfile:1-labs
 FROM public.ecr.aws/docker/library/alpine:3.18 AS base
-ARG BRANCH
-ARG VERSION
-ARG COMMIT=$VERSION
 ENV TZ=UTC
 
 # source stage =================================================================
 FROM base AS source
 WORKDIR /src
 
-# mandatory build-arg
-RUN test -n "$BRANCH" && test -n "$VERSION"
-
 # get and extract source from git
+ARG BRANCH
 ADD https://github.com/Sonarr/Sonarr.git#$BRANCH ./
 
 # apply available patches
@@ -57,32 +52,33 @@ COPY --from=source /src/.editorconfig ./
 COPY --from=source /src/Logo ./Logo
 COPY --from=source /src/src ./src
 
-# sonarr versioning
+# build backend
+ARG BRANCH
+ARG VERSION
 RUN buildprops=./src/Directory.Build.props && \
     sed -i "/<AssemblyConfiguration>/s/>.*<\//>$BRANCH<\//" "$buildprops" && \
-    sed -i "/<AssemblyVersion>/s/>.*<\//>$VERSION<\//" "$buildprops"
+    sed -i "/<AssemblyVersion>/s/>.*<\//>$VERSION<\//" "$buildprops" && \
+    dotnet build ./src/Sonarr.sln \
+        -p:RuntimeIdentifiers=$RUNTIME \
+        -p:Configuration=Release \
+        -p:SelfContained=false \
+        -t:PublishAllRids && \
+    find ./ \( \
+        -name "ServiceUninstall.*" -o \
+        -name "ServiceInstall.*" -o \
+        -name "Sonarr.Windows.*" \
+    \) | xargs rm -rf && \
+    mkdir /build && mv ./_output/net6.0/$RUNTIME/publish /build/bin && \
+    chmod +x /build/bin/ffprobe
+
+# versioning (runtime)
+ARG COMMIT=$VERSION
 COPY <<EOF /build/package_info
 PackageAuthor=[fabricionaweb](https://github.com/fabricionaweb/docker-sonarr)
 UpdateMethod=Docker
 Branch=$BRANCH
 PackageVersion=$COMMIT
 EOF
-
-# build backend
-RUN dotnet build ./src/Sonarr.sln \
-        -p:RuntimeIdentifiers=$RUNTIME \
-        -p:Configuration=Release \
-        -p:SelfContained=false \
-        -t:PublishAllRids
-
-# cleanup
-RUN find ./ \( \
-        -name "ServiceUninstall.*" -o \
-        -name "ServiceInstall.*" -o \
-        -name "Sonarr.Windows.*" \
-    \) | xargs rm -rf && \
-    mv ./_output/net6.0/$RUNTIME/publish /build/bin && \
-    chmod +x /build/bin/ffprobe
 
 # runtime stage ================================================================
 FROM base
