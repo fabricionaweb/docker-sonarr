@@ -28,10 +28,8 @@ RUN yarn install --frozen-lockfile --network-timeout 120000
 
 # frontend source and build
 COPY --from=source /src/frontend ./frontend
-RUN yarn build --env production --no-stats
-
-# cleanup
-RUN find ./ -name "*.map" -type f -delete && \
+RUN yarn build --env production --no-stats && \
+    find ./ -name "*.map" -type f -delete && \
     mv ./_output/UI /build
 
 # normalize arch ===============================================================
