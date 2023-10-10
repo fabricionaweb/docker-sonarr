@@ -92,7 +92,7 @@ RUN apk add --no-cache tzdata s6-overlay aspnetcore6-runtime sqlite-libs curl
 # copy files
 COPY --from=build-backend /build /app
 COPY --from=build-frontend /build /app/bin/UI
-COPY ./rootfs /
+COPY ./rootfs/. /
 
 # run using s6-overlay
 ENTRYPOINT ["/init"]
