@@ -4,12 +4,14 @@ CONFIG_FILE=/config/config.xml
 
 # create initial config file
 if [[ ! -f "$CONFIG_FILE" ]]; then
-  cat <<EOF >"$CONFIG_FILE"
+  TMP_FILE="/tmp/$0.$$.$RANDOM"
+  cat <<EOF >"$TMP_FILE"
 <Config>
   <AnalyticsEnabled>False</AnalyticsEnabled>
 </Config>
 EOF
-  chown $PUID:$PGID "$CONFIG_FILE"
+
+  install -m644 -o $PUID -g $PGID "$TMP_FILE" "$CONFIG_FILE"
 elif [[ $(grep -c "<AnalyticsEnabled>" "$CONFIG_FILE") == 0 ]]; then
   # if analytics doenst exist in config, insert one
   sed -i "/<Config>/a\ \ <AnalyticsEnabled>False<\/AnalyticsEnabled>" "$CONFIG_FILE"
