@@ -84,13 +84,13 @@ WORKDIR /config
 VOLUME /config
 EXPOSE 8989
 
-# runtime dependencies
-RUN apk add --no-cache tzdata s6-overlay aspnetcore6-runtime sqlite-libs curl
-
 # copy files
 COPY --from=build-backend /build /app
 COPY --from=build-frontend /build /app/bin/UI
 COPY ./rootfs/. /
+
+# runtime dependencies
+RUN apk add --no-cache tzdata s6-overlay aspnetcore6-runtime sqlite-libs curl
 
 # run using s6-overlay
 ENTRYPOINT ["/init"]
