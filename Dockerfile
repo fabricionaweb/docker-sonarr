@@ -7,8 +7,8 @@ WORKDIR /src
 FROM base AS source
 
 # get and extract source from git
-ARG BRANCH
-ADD https://github.com/Sonarr/Sonarr.git#$BRANCH ./
+ARG VERSION
+ADD https://github.com/Sonarr/Sonarr.git#v$VERSION ./
 
 # apply available patches
 RUN apk add --no-cache patch
