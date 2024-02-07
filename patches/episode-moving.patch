@@ -1,0 +1,74 @@
+From 6878d4e7e0be69b40a9539e86ff1d1aa767b1008 Mon Sep 17 00:00:00 2001
+From: Bogdan <mynameisbogdan@users.noreply.github.com>
+Date: Wed, 7 Feb 2024 21:09:15 +0200
+Subject: [PATCH] Logs for moving episodes
+
+---
+ .../Download/Clients/QBittorrent/QBittorrent.cs             | 6 ++++++
+ .../MediaFiles/EpisodeImport/ImportApprovedEpisodes.cs      | 5 +++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrent.cs b/src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrent.cs
+index e8917a0c977..ca2b6510f76 100644
+--- a/src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrent.cs
++++ b/src/NzbDrone.Core/Download/Clients/QBittorrent/QBittorrent.cs
+@@ -611,10 +611,14 @@ private ValidationFailure TestGetTorrents()
+
+         protected bool HasReachedSeedLimit(QBittorrentTorrent torrent, QBittorrentPreferences config)
+         {
++            _logger.Debug("HasReachedSeedLimit torrent.Ratio: '{0}'", torrent.Ratio);
++            _logger.Debug("HasReachedSeedLimit torrent.RatioLimit: '{0}'", torrent.RatioLimit);
++
+             if (torrent.RatioLimit >= 0)
+             {
+                 if (torrent.Ratio >= torrent.RatioLimit)
+                 {
++                    _logger.Debug("HasReachedSeedLimit: BY TORRENT RATIO LIMIT");
+                     return true;
+                 }
+             }
+@@ -622,12 +626,14 @@ protected bool HasReachedSeedLimit(QBittorrentTorrent torrent, QBittorrentPrefer
+             {
+                 if (Math.Round(torrent.Ratio, 2) >= config.MaxRatio)
+                 {
++                    _logger.Debug("HasReachedSeedLimit: BY MAX RATIO LIMIT");
+                     return true;
+                 }
+             }
+
+             if (HasReachedSeedingTimeLimit(torrent, config))
+             {
++                _logger.Debug("HasReachedSeedLimit: BY SEEDING TIME LIMIT");
+                 return true;
+             }
+
+diff --git a/src/NzbDrone.Core/MediaFiles/EpisodeImport/ImportApprovedEpisodes.cs b/src/NzbDrone.Core/MediaFiles/EpisodeImport/ImportApprovedEpisodes.cs
+index 308a210df61..1fe8768cac9 100644
+--- a/src/NzbDrone.Core/MediaFiles/EpisodeImport/ImportApprovedEpisodes.cs
++++ b/src/NzbDrone.Core/MediaFiles/EpisodeImport/ImportApprovedEpisodes.cs
+@@ -5,6 +5,7 @@
+ using NLog;
+ using NzbDrone.Common.Disk;
+ using NzbDrone.Common.Extensions;
++using NzbDrone.Common.Serializer;
+ using NzbDrone.Core.Download;
+ using NzbDrone.Core.Extras;
+ using NzbDrone.Core.MediaFiles.Commands;
+@@ -93,6 +94,8 @@ public List<ImportResult> Import(List<ImportDecision> decisions, bool newDownloa
+                     episodeFile.ReleaseGroup = localEpisode.ReleaseGroup;
+                     episodeFile.Languages = localEpisode.Languages;
+
++                    _logger.Debug("ImportMode: {0}", importMode.ToJson());
++
+                     bool copyOnly;
+                     switch (importMode)
+                     {
+@@ -108,6 +111,8 @@ public List<ImportResult> Import(List<ImportDecision> decisions, bool newDownloa
+                             break;
+                     }
+
++                    _logger.Debug("CopyOnly: {0}", copyOnly.ToJson());
++
+                     if (newDownload)
+                     {
+                         episodeFile.SceneName = localEpisode.SceneName;
