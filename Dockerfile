@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1-labs
-FROM public.ecr.aws/docker/library/alpine:3.19 AS base
+FROM public.ecr.aws/docker/library/alpine:3.20 AS base
 ENV TZ=UTC
 WORKDIR /src
 
@@ -19,7 +19,7 @@ RUN find ./ -name "*.patch" -print0 | sort -z | xargs -t -0 -n1 patch -p1 -i
 FROM base AS build-frontend
 
 # dependencies
-RUN apk add --no-cache nodejs-current && corepack enable
+RUN apk add --no-cache yarn
 
 # node_modules
 COPY --from=source /src/package.json /src/yarn.lock /src/tsconfig.json ./
