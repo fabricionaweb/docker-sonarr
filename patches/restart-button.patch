@@ -1,0 +1,24 @@
+add back restart button
+
+diff --git a/frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx b/frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx
+index 939852673..88477e8eb 100644
+--- a/frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx
++++ b/frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx
+@@ -48,8 +48,6 @@ function PageHeaderActionsMenu(props: PageHeaderActionsMenuProps) {
+             {translate('KeyboardShortcuts')}
+           </MenuItem>
+
+-          {isDocker ? null : (
+-            <>
+               <MenuItemSeparator />
+
+               <MenuItem onPress={handleRestartPress}>
+@@ -57,6 +55,8 @@ function PageHeaderActionsMenu(props: PageHeaderActionsMenuProps) {
+                 {translate('Restart')}
+               </MenuItem>
+
++          {isDocker ? null : (
++            <>
+               <MenuItem onPress={handleShutdownPress}>
+                 <Icon
+                   className={styles.itemIcon}
