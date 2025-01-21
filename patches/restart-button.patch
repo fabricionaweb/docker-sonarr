@@ -1,7 +1,5 @@
-add back restart button
+add back restart button, daemon can restart it
 
-diff --git a/frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx b/frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx
-index 939852673..88477e8eb 100644
 --- a/frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx
 +++ b/frontend/src/Components/Page/Header/PageHeaderActionsMenu.tsx
 @@ -48,8 +48,6 @@ function PageHeaderActionsMenu(props: PageHeaderActionsMenuProps) {
