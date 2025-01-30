@@ -51,11 +51,10 @@ COPY --from=source /src/src ./src
 # build backend
 ARG BRANCH
 ARG VERSION
-RUN buildprops=./src/Directory.Build.props && \
-    sed -i "/<AssemblyConfiguration>/s/>.*<\//>$BRANCH<\//" "$buildprops" && \
-    sed -i "/<AssemblyVersion>/s/>.*<\//>$VERSION<\//" "$buildprops" && \
-    dotnet build ./src/Sonarr.sln \
-        -p:RuntimeIdentifiers=$RUNTIME \
+RUN dotnet build ./src/Sonarr.sln \
+        -p:AssemblyConfiguration="$BRANCH" \
+        -p:AssemblyVersion="$VERSION" \
+        -p:RuntimeIdentifiers="$RUNTIME" \
         -p:Configuration=Release \
         -p:SelfContained=false \
         -t:PublishAllRids && \
